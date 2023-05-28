@@ -174,8 +174,7 @@ def get_user_model():
         )
     except LookupError:
         raise ImproperlyConfigured(
-            "AUTH_USER_MODEL refers to model '%s' that has not been installed"
-            % settings.AUTH_USER_MODEL
+            f"AUTH_USER_MODEL refers to model '{settings.AUTH_USER_MODEL}' that has not been installed"
         )
 
 
@@ -227,7 +226,7 @@ def get_permission_codename(action, opts):
     """
     Return the codename of the permission for the specified action.
     """
-    return "%s_%s" % (action, opts.model_name)
+    return f"{action}_{opts.model_name}"
 
 
 def update_session_auth_hash(request, user):

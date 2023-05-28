@@ -31,10 +31,7 @@ class LimitedStream(IOBase):
         limit = self.limit
         if _pos >= limit:
             return b""
-        if size == -1 or size is None:
-            size = limit - _pos
-        else:
-            size = min(size, limit - _pos)
+        size = limit - _pos if size == -1 or size is None else min(size, limit - _pos)
         data = self._read(size)
         self._pos += len(data)
         return data
@@ -44,10 +41,7 @@ class LimitedStream(IOBase):
         limit = self.limit
         if _pos >= limit:
             return b""
-        if size == -1 or size is None:
-            size = limit - _pos
-        else:
-            size = min(size, limit - _pos)
+        size = limit - _pos if size == -1 or size is None else min(size, limit - _pos)
         line = self._readline(size)
         self._pos += len(line)
         return line
@@ -64,7 +58,7 @@ class WSGIRequest(HttpRequest):
         # be careful to only replace the first slash in the path because of
         # http://test/something and http://test//something being different as
         # stated in RFC 3986.
-        self.path = "%s/%s" % (script_name.rstrip("/"), path_info.replace("/", "", 1))
+        self.path = f'{script_name.rstrip("/")}/{path_info.replace("/", "", 1)}'
         self.META = environ
         self.META["PATH_INFO"] = path_info
         self.META["SCRIPT_NAME"] = script_name
@@ -162,16 +156,9 @@ def get_script_name(environ):
     if settings.FORCE_SCRIPT_NAME is not None:
         return settings.FORCE_SCRIPT_NAME
 
-    # If Apache's mod_rewrite had a whack at the URL, Apache set either
-    # SCRIPT_URL or REDIRECT_URL to the full resource URL before applying any
-    # rewrites. Unfortunately not every web server (lighttpd!) passes this
-    # information through all the time, so FORCE_SCRIPT_NAME, above, is still
-    # needed.
-    script_url = get_bytes_from_wsgi(environ, "SCRIPT_URL", "") or get_bytes_from_wsgi(
-        environ, "REDIRECT_URL", ""
-    )
-
-    if script_url:
+    if script_url := get_bytes_from_wsgi(
+        environ, "SCRIPT_URL", ""
+    ) or get_bytes_from_wsgi(environ, "REDIRECT_URL", ""):
         if b"//" in script_url:
             # mod_wsgi squashes multiple successive slashes in PATH_INFO,
             # do the same with script_url before manipulating paths (#17133).

@@ -7,7 +7,7 @@ from django.core.exceptions import SuspiciousFileOperation
 def validate_file_name(name, allow_relative_path=False):
     # Remove potentially dangerous names
     if os.path.basename(name) in {"", ".", ".."}:
-        raise SuspiciousFileOperation("Could not derive file name from '%s'" % name)
+        raise SuspiciousFileOperation(f"Could not derive file name from '{name}'")
 
     if allow_relative_path:
         # Use PurePosixPath() because this branch is checked only in
@@ -15,11 +15,9 @@ def validate_file_name(name, allow_relative_path=False):
         # Unix style (with forward slashes).
         path = pathlib.PurePosixPath(name)
         if path.is_absolute() or ".." in path.parts:
-            raise SuspiciousFileOperation(
-                "Detected path traversal attempt in '%s'" % name
-            )
+            raise SuspiciousFileOperation(f"Detected path traversal attempt in '{name}'")
     elif name != os.path.basename(name):
-        raise SuspiciousFileOperation("File name '%s' includes path elements" % name)
+        raise SuspiciousFileOperation(f"File name '{name}' includes path elements")
 
     return name
 
@@ -56,9 +54,7 @@ class FileProxyMixin:
     def readable(self):
         if self.closed:
             return False
-        if hasattr(self.file, "readable"):
-            return self.file.readable()
-        return True
+        return self.file.readable() if hasattr(self.file, "readable") else True
 
     def writable(self):
         if self.closed:
@@ -70,9 +66,7 @@ class FileProxyMixin:
     def seekable(self):
         if self.closed:
             return False
-        if hasattr(self.file, "seekable"):
-            return self.file.seekable()
-        return True
+        return self.file.seekable() if hasattr(self.file, "seekable") else True
 
     def __iter__(self):
         return iter(self.file)

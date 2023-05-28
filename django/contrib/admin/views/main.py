@@ -123,7 +123,7 @@ class ChangeList:
         to_field = request.GET.get(TO_FIELD_VAR)
         if to_field and not model_admin.to_field_allowed(request, to_field):
             raise DisallowedModelAdminToField(
-                "The field %s cannot be referenced." % to_field
+                f"The field {to_field} cannot be referenced."
             )
         self.to_field = to_field
         self.params = dict(request.GET.items())
@@ -137,10 +137,7 @@ class ChangeList:
         self.remove_facet_link = self.get_query_string(remove=[IS_FACETS_VAR])
         self.add_facet_link = self.get_query_string({IS_FACETS_VAR: True})
 
-        if self.is_popup:
-            self.list_editable = ()
-        else:
-            self.list_editable = list_editable
+        self.list_editable = () if self.is_popup else list_editable
         self.queryset = self.get_queryset(request)
         self.get_results(request)
         if self.is_popup:
@@ -153,11 +150,7 @@ class ChangeList:
         self.pk_attname = self.lookup_opts.pk.attname
 
     def __repr__(self):
-        return "<%s: model=%s model_admin=%s>" % (
-            self.__class__.__qualname__,
-            self.model.__qualname__,
-            self.model_admin.__class__.__qualname__,
-        )
+        return f"<{self.__class__.__qualname__}: model={self.model.__qualname__} model_admin={self.model_admin.__class__.__qualname__}>"
 
     def get_filters_params(self, params=None):
         """
@@ -236,10 +229,10 @@ class ChangeList:
         if self.date_hierarchy:
             # Create bounded lookup parameters so that the query is more
             # efficient.
-            year = lookup_params.pop("%s__year" % self.date_hierarchy, None)
+            year = lookup_params.pop(f"{self.date_hierarchy}__year", None)
             if year is not None:
-                month = lookup_params.pop("%s__month" % self.date_hierarchy, None)
-                day = lookup_params.pop("%s__day" % self.date_hierarchy, None)
+                month = lookup_params.pop(f"{self.date_hierarchy}__month", None)
+                day = lookup_params.pop(f"{self.date_hierarchy}__day", None)
                 try:
                     from_date = datetime(
                         int(year[-1]),
@@ -261,8 +254,8 @@ class ChangeList:
                     to_date = make_aware(to_date)
                 lookup_params.update(
                     {
-                        "%s__gte" % self.date_hierarchy: [from_date],
-                        "%s__lt" % self.date_hierarchy: [to_date],
+                        f"{self.date_hierarchy}__gte": [from_date],
+                        f"{self.date_hierarchy}__lt": [to_date],
                     }
                 )
 
@@ -504,11 +497,10 @@ class ChangeList:
                 if isinstance(field, (Combinable, OrderBy)):
                     if not isinstance(field, OrderBy):
                         field = field.asc()
-                    if isinstance(field.expression, F):
-                        order_type = "desc" if field.descending else "asc"
-                        field = field.expression.name
-                    else:
+                    if not isinstance(field.expression, F):
                         continue
+                    order_type = "desc" if field.descending else "asc"
+                    field = field.expression.name
                 elif field.startswith("-"):
                     field = field.removeprefix("-")
                     order_type = "desc"
@@ -620,7 +612,7 @@ class ChangeList:
     def url_for_result(self, result):
         pk = getattr(result, self.pk_attname)
         return reverse(
-            "admin:%s_%s_change" % (self.opts.app_label, self.opts.model_name),
+            f"admin:{self.opts.app_label}_{self.opts.model_name}_change",
             args=(quote(pk),),
             current_app=self.model_admin.admin_site.name,
         )

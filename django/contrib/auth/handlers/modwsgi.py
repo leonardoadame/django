@@ -19,9 +19,7 @@ def check_password(environ, username, password):
             user = UserModel._default_manager.get_by_natural_key(username)
         except UserModel.DoesNotExist:
             return None
-        if not user.is_active:
-            return None
-        return user.check_password(password)
+        return None if not user.is_active else user.check_password(password)
     finally:
         db.close_old_connections()
 

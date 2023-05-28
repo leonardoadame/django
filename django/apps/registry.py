@@ -85,14 +85,10 @@ class Apps:
 
             # Phase 1: initialize app configs and import app modules.
             for entry in installed_apps:
-                if isinstance(entry, AppConfig):
-                    app_config = entry
-                else:
-                    app_config = AppConfig.create(entry)
+                app_config = entry if isinstance(entry, AppConfig) else AppConfig.create(entry)
                 if app_config.label in self.app_configs:
                     raise ImproperlyConfigured(
-                        "Application labels aren't unique, "
-                        "duplicates: %s" % app_config.label
+                        f"Application labels aren't unique, duplicates: {app_config.label}"
                     )
 
                 self.app_configs[app_config.label] = app_config
@@ -102,11 +98,11 @@ class Apps:
             counts = Counter(
                 app_config.name for app_config in self.app_configs.values()
             )
-            duplicates = [name for name, count in counts.most_common() if count > 1]
-            if duplicates:
+            if duplicates := [
+                name for name, count in counts.most_common() if count > 1
+            ]:
                 raise ImproperlyConfigured(
-                    "Application names aren't unique, "
-                    "duplicates: %s" % ", ".join(duplicates)
+                    f"""Application names aren't unique, duplicates: {", ".join(duplicates)}"""
                 )
 
             self.apps_ready = True
@@ -157,10 +153,10 @@ class Apps:
         try:
             return self.app_configs[app_label]
         except KeyError:
-            message = "No installed app with label '%s'." % app_label
+            message = f"No installed app with label '{app_label}'."
             for app_config in self.get_app_configs():
                 if app_config.name == app_label:
-                    message += " Did you mean '%s'?" % app_config.label
+                    message += f" Did you mean '{app_config.label}'?"
                     break
             raise LookupError(message)
 
@@ -213,27 +209,21 @@ class Apps:
         return app_config.get_model(model_name, require_ready=require_ready)
 
     def register_model(self, app_label, model):
-        # Since this method is called when models are imported, it cannot
-        # perform imports because of the risk of import loops. It mustn't
-        # call get_app_config().
-        model_name = model._meta.model_name
         app_models = self.all_models[app_label]
+        model_name = model._meta.model_name
         if model_name in app_models:
             if (
                 model.__name__ == app_models[model_name].__name__
                 and model.__module__ == app_models[model_name].__module__
             ):
                 warnings.warn(
-                    "Model '%s.%s' was already registered. Reloading models is not "
-                    "advised as it can lead to inconsistencies, most notably with "
-                    "related models." % (app_label, model_name),
+                    f"Model '{app_label}.{model_name}' was already registered. Reloading models is not advised as it can lead to inconsistencies, most notably with related models.",
                     RuntimeWarning,
                     stacklevel=2,
                 )
             else:
                 raise RuntimeError(
-                    "Conflicting '%s' models in application '%s': %s and %s."
-                    % (model_name, app_label, app_models[model_name], model)
+                    f"Conflicting '{model_name}' models in application '{app_label}': {app_models[model_name]} and {model}."
                 )
         app_models[model_name] = model
         self.do_pending_operations(model)
@@ -277,7 +267,7 @@ class Apps:
         """
         model = self.all_models[app_label].get(model_name.lower())
         if model is None:
-            raise LookupError("Model '%s.%s' not registered." % (app_label, model_name))
+            raise LookupError(f"Model '{app_label}.{model_name}' not registered.")
         return model
 
     @functools.cache
@@ -319,8 +309,7 @@ class Apps:
         installed = {app_config.name for app_config in self.get_app_configs()}
         if not available.issubset(installed):
             raise ValueError(
-                "Available apps isn't a subset of installed apps, extra apps: %s"
-                % ", ".join(available - installed)
+                f"""Available apps isn't a subset of installed apps, extra apps: {", ".join(available - installed)}"""
             )
 
         self.stored_app_configs.append(self.app_configs)

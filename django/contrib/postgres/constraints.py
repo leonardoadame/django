@@ -101,7 +101,7 @@ class ExclusionConstraint(BaseConstraint):
             expressions=Expressions(
                 table, expressions, compiler, schema_editor.quote_value
             ),
-            where=" WHERE (%s)" % condition if condition else "",
+            where=f" WHERE ({condition})" if condition else "",
             include=schema_editor._index_include_sql(model, include),
             deferrable=schema_editor._deferrable_constraint_sql(self.deferrable),
         )
@@ -165,20 +165,16 @@ class ExclusionConstraint(BaseConstraint):
             repr(self.index_type),
             repr(self.expressions),
             repr(self.name),
-            "" if self.condition is None else " condition=%s" % self.condition,
+            "" if self.condition is None else f" condition={self.condition}",
             "" if self.deferrable is None else " deferrable=%r" % self.deferrable,
-            "" if not self.include else " include=%s" % repr(self.include),
-            (
-                ""
-                if self.violation_error_code is None
-                else " violation_error_code=%r" % self.violation_error_code
-            ),
-            (
-                ""
-                if self.violation_error_message is None
-                or self.violation_error_message == self.default_violation_error_message
-                else " violation_error_message=%r" % self.violation_error_message
-            ),
+            "" if not self.include else f" include={repr(self.include)}",
+            ""
+            if self.violation_error_code is None
+            else " violation_error_code=%r" % self.violation_error_code,
+            ""
+            if self.violation_error_message is None
+            or self.violation_error_message == self.default_violation_error_message
+            else " violation_error_message=%r" % self.violation_error_message,
         )
 
     def validate(self, model, instance, exclude=None, using=DEFAULT_DB_ALIAS):
@@ -213,15 +209,15 @@ class ExclusionConstraint(BaseConstraint):
         model_class_pk = instance._get_pk_val(model._meta)
         if not instance._state.adding and model_class_pk is not None:
             queryset = queryset.exclude(pk=model_class_pk)
-        if not self.condition:
-            if queryset.exists():
-                raise ValidationError(
-                    self.get_violation_error_message(), code=self.violation_error_code
-                )
-        else:
+        if self.condition:
             if (self.condition & Exists(queryset.filter(self.condition))).check(
                 replacement_map, using=using
             ):
                 raise ValidationError(
                     self.get_violation_error_message(), code=self.violation_error_code
                 )
+
+        elif queryset.exists():
+            raise ValidationError(
+                self.get_violation_error_message(), code=self.violation_error_code
+            )

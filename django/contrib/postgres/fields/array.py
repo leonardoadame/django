@@ -44,7 +44,7 @@ class ArrayField(CheckFieldDefaultMixin, Field):
             return self.__dict__["model"]
         except KeyError:
             raise AttributeError(
-                "'%s' object has no attribute 'model'" % self.__class__.__name__
+                f"'{self.__class__.__name__}' object has no attribute 'model'"
             )
 
     @model.setter
@@ -66,37 +66,32 @@ class ArrayField(CheckFieldDefaultMixin, Field):
                     id="postgres.E002",
                 )
             )
-        else:
-            # Remove the field name checks as they are not needed here.
-            base_checks = self.base_field.check()
-            if base_checks:
-                error_messages = "\n    ".join(
-                    "%s (%s)" % (base_check.msg, base_check.id)
-                    for base_check in base_checks
-                    if isinstance(base_check, checks.Error)
-                )
-                if error_messages:
-                    errors.append(
-                        checks.Error(
-                            "Base field for array has errors:\n    %s" % error_messages,
-                            obj=self,
-                            id="postgres.E001",
-                        )
+        elif base_checks := self.base_field.check():
+            if error_messages := "\n    ".join(
+                f"{base_check.msg} ({base_check.id})"
+                for base_check in base_checks
+                if isinstance(base_check, checks.Error)
+            ):
+                errors.append(
+                    checks.Error(
+                        "Base field for array has errors:\n    %s" % error_messages,
+                        obj=self,
+                        id="postgres.E001",
                     )
-                warning_messages = "\n    ".join(
-                    "%s (%s)" % (base_check.msg, base_check.id)
-                    for base_check in base_checks
-                    if isinstance(base_check, checks.Warning)
                 )
-                if warning_messages:
-                    errors.append(
-                        checks.Warning(
-                            "Base field for array has warnings:\n    %s"
-                            % warning_messages,
-                            obj=self,
-                            id="postgres.W004",
-                        )
+            if warning_messages := "\n    ".join(
+                f"{base_check.msg} ({base_check.id})"
+                for base_check in base_checks
+                if isinstance(base_check, checks.Warning)
+            ):
+                errors.append(
+                    checks.Warning(
+                        "Base field for array has warnings:\n    %s"
+                        % warning_messages,
+                        obj=self,
+                        id="postgres.W004",
                     )
+                )
         return errors
 
     def set_attributes_from_name(self, name):
@@ -105,15 +100,15 @@ class ArrayField(CheckFieldDefaultMixin, Field):
 
     @property
     def description(self):
-        return "Array of %s" % self.base_field.description
+        return f"Array of {self.base_field.description}"
 
     def db_type(self, connection):
         size = self.size or ""
-        return "%s[%s]" % (self.base_field.db_type(connection), size)
+        return f"{self.base_field.db_type(connection)}[{size}]"
 
     def cast_db_type(self, connection):
         size = self.size or ""
-        return "%s[%s]" % (self.base_field.cast_db_type(connection), size)
+        return f"{self.base_field.cast_db_type(connection)}[{size}]"
 
     def db_parameters(self, connection):
         db_params = super().db_parameters(connection)
@@ -121,7 +116,7 @@ class ArrayField(CheckFieldDefaultMixin, Field):
         return db_params
 
     def get_placeholder(self, value, compiler, connection):
-        return "%s::{}".format(self.db_type(connection))
+        return f"%s::{self.db_type(connection)}"
 
     def get_db_prep_value(self, value, connection, prepared=False):
         if isinstance(value, (list, tuple)):
@@ -172,8 +167,7 @@ class ArrayField(CheckFieldDefaultMixin, Field):
         return json.dumps(values)
 
     def get_transform(self, name):
-        transform = super().get_transform(name)
-        if transform:
+        if transform := super().get_transform(name):
             return transform
         if "_" not in name:
             try:
@@ -204,8 +198,8 @@ class ArrayField(CheckFieldDefaultMixin, Field):
                     code="item_invalid",
                     params={"nth": index + 1},
                 )
-        if isinstance(self.base_field, ArrayField):
-            if len({len(i) for i in value}) > 1:
+        if len({len(i) for i in value}) > 1:
+            if isinstance(self.base_field, ArrayField):
                 raise exceptions.ValidationError(
                     self.error_messages["nested_array_mismatch"],
                     code="nested_array_mismatch",
@@ -256,7 +250,7 @@ class ArrayRHSMixin:
     def process_rhs(self, compiler, connection):
         rhs, rhs_params = super().process_rhs(compiler, connection)
         cast_type = self.lhs.output_field.cast_db_type(connection)
-        return "%s::%s" % (rhs, cast_type), rhs_params
+        return f"{rhs}::{cast_type}", rhs_params
 
     def _rhs_not_none_values(self, rhs):
         for x in rhs:
@@ -326,7 +320,7 @@ class IndexTransform(Transform):
     def as_sql(self, compiler, connection):
         lhs, params = compiler.compile(self.lhs)
         if not lhs.endswith("]"):
-            lhs = "(%s)" % lhs
+            lhs = f"({lhs})"
         return "%s[%%s]" % lhs, (*params, self.index)
 
     @property
@@ -352,7 +346,7 @@ class SliceTransform(Transform):
     def as_sql(self, compiler, connection):
         lhs, params = compiler.compile(self.lhs)
         if not lhs.endswith("]"):
-            lhs = "(%s)" % lhs
+            lhs = f"({lhs})"
         return "%s[%%s:%%s]" % lhs, (*params, self.start, self.end)
 
 

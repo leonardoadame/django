@@ -15,11 +15,7 @@ from django.utils.functional import cached_property
 class BaseMemcachedCache(BaseCache):
     def __init__(self, server, params, library, value_not_found_exception):
         super().__init__(params)
-        if isinstance(server, str):
-            self._servers = re.split("[;,]", server)
-        else:
-            self._servers = server
-
+        self._servers = re.split("[;,]", server) if isinstance(server, str) else server
         # Exception type raised by the underlying client library for a
         # nonexistent key.
         self.LibraryValueNotFoundException = value_not_found_exception
@@ -114,7 +110,7 @@ class BaseMemcachedCache(BaseCache):
         except self.LibraryValueNotFoundException:
             val = None
         if val is None:
-            raise ValueError("Key '%s' not found" % key)
+            raise ValueError(f"Key '{key}' not found")
         return val
 
     def set_many(self, data, timeout=DEFAULT_TIMEOUT, version=None):
@@ -153,10 +149,7 @@ class PyLibMCCache(BaseMemcachedCache):
 
     @property
     def client_servers(self):
-        output = []
-        for server in self._servers:
-            output.append(server.removeprefix("unix:"))
-        return output
+        return [server.removeprefix("unix:") for server in self._servers]
 
     def touch(self, key, timeout=DEFAULT_TIMEOUT, version=None):
         key = self.make_and_validate_key(key, version=version)

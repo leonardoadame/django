@@ -75,14 +75,13 @@ class ListMixin:
             return [
                 self._get_single_external(i) for i in range(*index.indices(len(self)))
             ]
-        else:
-            index = self._checkindex(index)
-            return self._get_single_external(index)
+        index = self._checkindex(index)
+        return self._get_single_external(index)
 
     def __delitem__(self, index):
         "Delete the item(s) at the specified index/slice."
         if not isinstance(index, (int, slice)):
-            raise TypeError("%s is not a legal index" % index)
+            raise TypeError(f"{index} is not a legal index")
 
         # calculate new length and dimensions
         origLen = len(self)
@@ -136,7 +135,7 @@ class ListMixin:
             del self[:]
         else:
             cache = list(self)
-            for i in range(n - 1):
+            for _ in range(n - 1):
                 self.extend(cache)
         return self
 
@@ -170,18 +169,14 @@ class ListMixin:
     # ## Non-mutating ##
     def count(self, val):
         "Standard list count method"
-        count = 0
-        for i in self:
-            if val == i:
-                count += 1
-        return count
+        return sum(1 for i in self if val == i)
 
     def index(self, val):
         "Standard list index method"
         for i in range(0, len(self)):
             if self[i] == val:
                 return i
-        raise ValueError("%s not found in object" % val)
+        raise ValueError(f"{val} not found in object")
 
     # ## Mutating ##
     def append(self, val):
@@ -195,7 +190,7 @@ class ListMixin:
     def insert(self, index, val):
         "Standard list insert method"
         if not isinstance(index, int):
-            raise TypeError("%s is not a legal index" % index)
+            raise TypeError(f"{index} is not a legal index")
         self[index:index] = [val]
 
     def pop(self, index=-1):
@@ -234,7 +229,7 @@ class ListMixin:
             return index
         if -length <= index < 0:
             return index + length
-        raise IndexError("invalid index: %s" % index)
+        raise IndexError(f"invalid index: {index}")
 
     def _check_allowed(self, items):
         if hasattr(self, "_allowed"):

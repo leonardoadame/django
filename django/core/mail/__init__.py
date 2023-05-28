@@ -123,7 +123,7 @@ def mail_admins(
     if not all(isinstance(a, (list, tuple)) and len(a) == 2 for a in settings.ADMINS):
         raise ValueError("The ADMINS setting must be a list of 2-tuples.")
     mail = EmailMultiAlternatives(
-        "%s%s" % (settings.EMAIL_SUBJECT_PREFIX, subject),
+        f"{settings.EMAIL_SUBJECT_PREFIX}{subject}",
         message,
         settings.SERVER_EMAIL,
         [a[1] for a in settings.ADMINS],
@@ -143,7 +143,7 @@ def mail_managers(
     if not all(isinstance(a, (list, tuple)) and len(a) == 2 for a in settings.MANAGERS):
         raise ValueError("The MANAGERS setting must be a list of 2-tuples.")
     mail = EmailMultiAlternatives(
-        "%s%s" % (settings.EMAIL_SUBJECT_PREFIX, subject),
+        f"{settings.EMAIL_SUBJECT_PREFIX}{subject}",
         message,
         settings.SERVER_EMAIL,
         [a[1] for a in settings.MANAGERS],

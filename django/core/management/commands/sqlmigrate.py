@@ -53,27 +53,24 @@ class Command(BaseCommand):
         except LookupError as err:
             raise CommandError(str(err))
         if app_label not in loader.migrated_apps:
-            raise CommandError("App '%s' does not have migrations" % app_label)
+            raise CommandError(f"App '{app_label}' does not have migrations")
         try:
             migration = loader.get_migration_by_prefix(app_label, migration_name)
         except AmbiguityError:
             raise CommandError(
-                "More than one migration matches '%s' in app '%s'. Please be more "
-                "specific." % (migration_name, app_label)
+                f"More than one migration matches '{migration_name}' in app '{app_label}'. Please be more specific."
             )
         except KeyError:
             raise CommandError(
-                "Cannot find a migration matching '%s' from app '%s'. Is it in "
-                "INSTALLED_APPS?" % (migration_name, app_label)
+                f"Cannot find a migration matching '{migration_name}' from app '{app_label}'. Is it in INSTALLED_APPS?"
             )
-        target = (app_label, migration.name)
-
         # Show begin/end around output for atomic migrations, if the database
         # supports transactional DDL.
         self.output_transaction = (
             migration.atomic and connection.features.can_rollback_ddl
         )
 
+        target = (app_label, migration.name)
         # Make a plan that represents just the requested migrations and show SQL
         # for it
         plan = [(loader.graph.nodes[target], options["backwards"])]

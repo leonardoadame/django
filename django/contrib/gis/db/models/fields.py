@@ -61,8 +61,7 @@ def get_srid_info(srid, connection):
         _srid_cache[alias][srid] = SRIDCacheEntry(
             units=units,
             units_name=units_name,
-            spheroid='SPHEROID["%s",%s,%s]'
-            % (srs["spheroid"], srs.semi_major, srs.inverse_flattening),
+            spheroid=f'SPHEROID["{srs["spheroid"]}",{srs.semi_major},{srs.inverse_flattening}]',
             geodetic=srs.geographic,
         )
 
@@ -152,10 +151,7 @@ class BaseSpatialField(Field):
         returned.
         """
         srid = obj.srid  # SRID of given geometry.
-        if srid is None or self.srid == -1 or (srid == -1 and self.srid != -1):
-            return self.srid
-        else:
-            return srid
+        return self.srid if srid is None or self.srid == -1 or srid == -1 else srid
 
     def get_db_prep_value(self, value, connection, *args, **kwargs):
         if value is None:
@@ -185,7 +181,7 @@ class BaseSpatialField(Field):
                 return gdal.GDALRaster(value)
             except GDALException:
                 raise ValueError(
-                    "Couldn't create spatial object from lookup value '%s'." % value
+                    f"Couldn't create spatial object from lookup value '{value}'."
                 )
 
     def get_prep_value(self, value):
@@ -194,29 +190,21 @@ class BaseSpatialField(Field):
             return None
         # When the input is not a geometry or raster, attempt to construct one
         # from the given string input.
-        if isinstance(obj, GEOSGeometry):
-            pass
-        else:
+        if not isinstance(obj, GEOSGeometry):
             # Check if input is a candidate for conversion to raster or geometry.
             is_candidate = isinstance(obj, (bytes, str)) or hasattr(
                 obj, "__geo_interface__"
             )
-            # Try to convert the input to raster.
-            raster = self.get_raster_prep_value(obj, is_candidate)
-
-            if raster:
+            if raster := self.get_raster_prep_value(obj, is_candidate):
                 obj = raster
             elif is_candidate:
                 try:
                     obj = GEOSGeometry(obj)
                 except (GEOSException, GDALException):
-                    raise ValueError(
-                        "Couldn't create spatial object from lookup value '%s'." % obj
-                    )
+                    raise ValueError(f"Couldn't create spatial object from lookup value '{obj}'.")
             else:
                 raise ValueError(
-                    "Cannot use object with type %s for a spatial lookup parameter."
-                    % type(obj).__name__
+                    f"Cannot use object with type {type(obj).__name__} for a spatial lookup parameter."
                 )
 
         # Assigning the SRID value.

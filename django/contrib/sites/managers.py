@@ -25,25 +25,24 @@ class CurrentSiteManager(models.Manager):
         except FieldDoesNotExist:
             return [
                 checks.Error(
-                    "CurrentSiteManager could not find a field named '%s'."
-                    % field_name,
+                    f"CurrentSiteManager could not find a field named '{field_name}'.",
                     obj=self,
                     id="sites.E001",
                 )
             ]
 
-        if not field.many_to_many and not isinstance(field, (models.ForeignKey)):
-            return [
+        return (
+            [
                 checks.Error(
-                    "CurrentSiteManager cannot use '%s.%s' as it is not a foreign key "
-                    "or a many-to-many field."
-                    % (self.model._meta.object_name, field_name),
+                    f"CurrentSiteManager cannot use '{self.model._meta.object_name}.{field_name}' as it is not a foreign key or a many-to-many field.",
                     obj=self,
                     id="sites.E002",
                 )
             ]
-
-        return []
+            if not field.many_to_many
+            and not isinstance(field, (models.ForeignKey))
+            else []
+        )
 
     def _get_field_name(self):
         """Return self.__field_name or 'site' or 'sites'."""
