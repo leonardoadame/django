@@ -8,23 +8,18 @@ name = "javascript"
 
   [analyzers.meta]
   plugins = [
+    "meteor",
+    "vue",
+    "angular",
     "react",
     "ember",
-    "angularjs",
-    "vue",
-    "meteor",
-    "angular"
+    "angularjs"
   ]
   environment = [
     "nodejs",
-    "jest",
-    "browser",
     "mocha",
-    "jasmine",
-    "mongo",
-    "vitest",
-    "cypress",
-    "jquery"
+    "jquery",
+    "vitest"
   ]
 
 [[analyzers]]
