@@ -66,15 +66,7 @@ class DatabaseCache(BaseDatabaseCache):
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT %s, %s, %s FROM %s WHERE %s IN (%s)"
-                % (
-                    quote_name("cache_key"),
-                    quote_name("value"),
-                    quote_name("expires"),
-                    table,
-                    quote_name("cache_key"),
-                    ", ".join(["%s"] * len(key_map)),
-                ),
+                f'SELECT {quote_name("cache_key")}, {quote_name("value")}, {quote_name("expires")} FROM {table} WHERE {quote_name("cache_key")} IN ({", ".join(["%s"] * len(key_map))})',
                 list(key_map),
             )
             rows = cursor.fetchall()
@@ -117,7 +109,7 @@ class DatabaseCache(BaseDatabaseCache):
         table = quote_name(self._table)
 
         with connection.cursor() as cursor:
-            cursor.execute("SELECT COUNT(*) FROM %s" % table)
+            cursor.execute(f"SELECT COUNT(*) FROM {table}")
             num = cursor.fetchone()[0]
             now = tz_now()
             now = now.replace(microsecond=0)
@@ -221,12 +213,7 @@ class DatabaseCache(BaseDatabaseCache):
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "DELETE FROM %s WHERE %s IN (%s)"
-                % (
-                    table,
-                    quote_name("cache_key"),
-                    ", ".join(["%s"] * len(keys)),
-                ),
+                f'DELETE FROM {table} WHERE {quote_name("cache_key")} IN ({", ".join(["%s"] * len(keys))})',
                 keys,
             )
             return bool(cursor.rowcount)
@@ -274,8 +261,7 @@ class DatabaseCache(BaseDatabaseCache):
                 cursor.execute(
                     connection.ops.cache_key_culling_sql() % table, [cull_num]
                 )
-                last_cache_key = cursor.fetchone()
-                if last_cache_key:
+                if last_cache_key := cursor.fetchone():
                     cursor.execute(
                         "DELETE FROM %s WHERE %s < %%s"
                         % (
@@ -290,4 +276,4 @@ class DatabaseCache(BaseDatabaseCache):
         connection = connections[db]
         table = connection.ops.quote_name(self._table)
         with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM %s" % table)
+            cursor.execute(f"DELETE FROM {table}")

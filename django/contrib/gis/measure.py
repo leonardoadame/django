@@ -73,17 +73,13 @@ class MeasureBase:
         if name in self.UNITS:
             return self.standard / self.UNITS[name]
         else:
-            raise AttributeError("Unknown unit type: %s" % name)
+            raise AttributeError(f"Unknown unit type: {name}")
 
     def __repr__(self):
-        return "%s(%s=%s)" % (
-            pretty_name(self),
-            self._default_unit,
-            getattr(self, self._default_unit),
-        )
+        return f"{pretty_name(self)}({self._default_unit}={getattr(self, self._default_unit)})"
 
     def __str__(self):
-        return "%s %s" % (getattr(self, self._default_unit), self._default_unit)
+        return f"{getattr(self, self._default_unit)} {self._default_unit}"
 
     # **** Comparison methods ****
 
@@ -224,7 +220,7 @@ class MeasureBase:
                     val += self.UNITS[u] * value
                     default_unit = u
                 else:
-                    raise AttributeError("Unknown unit type: %s" % unit)
+                    raise AttributeError(f"Unknown unit type: {unit}")
         return val, default_unit
 
     @classmethod
@@ -242,9 +238,7 @@ class MeasureBase:
         elif lower in cls.LALIAS:
             return cls.LALIAS[lower]
         else:
-            raise Exception(
-                'Could not find a unit keyword associated with "%s"' % unit_str
-            )
+            raise Exception(f'Could not find a unit keyword associated with "{unit_str}"')
 
 
 class Distance(MeasureBase):

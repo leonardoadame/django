@@ -128,8 +128,7 @@ class Command(BaseCommand):
 
     def reset_sequences(self, connection, models):
         """Reset database sequences for the given connection and models."""
-        sequence_sql = connection.ops.sequence_reset_sql(no_style(), models)
-        if sequence_sql:
+        if sequence_sql := connection.ops.sequence_reset_sql(no_style(), models):
             if self.verbosity >= 2:
                 self.stdout.write("Resetting sequences")
             with connection.cursor() as cursor:
@@ -170,7 +169,7 @@ class Command(BaseCommand):
         try:
             connection.check_constraints(table_names=table_names)
         except Exception as e:
-            e.args = ("Problem installing fixtures: %s" % e,)
+            e.args = (f"Problem installing fixtures: {e}", )
             raise
 
         # If we found even one object in a fixture, we need to reset the
@@ -232,13 +231,12 @@ class Command(BaseCommand):
             open_method, mode = self.compression_formats[cmp_fmt]
             fixture = open_method(fixture_file, mode)
             self.fixture_count += 1
-            objects_in_fixture = 0
             loaded_objects_in_fixture = 0
             if self.verbosity >= 2:
                 self.stdout.write(
-                    "Installing %s fixture '%s' from %s."
-                    % (ser_fmt, fixture_name, humanize(fixture_dir))
+                    f"Installing {ser_fmt} fixture '{fixture_name}' from {humanize(fixture_dir)}."
                 )
+            objects_in_fixture = 0
             try:
                 objects = serializers.deserialize(
                     ser_fmt,
@@ -259,9 +257,7 @@ class Command(BaseCommand):
                             )
             except Exception as e:
                 if not isinstance(e, CommandError):
-                    e.args = (
-                        "Problem installing fixture '%s': %s" % (fixture_file, e),
-                    )
+                    e.args = (f"Problem installing fixture '{fixture_file}': {e}", )
                 raise
             finally:
                 fixture.close()
@@ -273,8 +269,7 @@ class Command(BaseCommand):
             # Warn if the fixture we loaded contains 0 objects.
             if objects_in_fixture == 0:
                 warnings.warn(
-                    "No fixture data found for '%s'. (File format may be "
-                    "invalid.)" % fixture_name,
+                    f"No fixture data found for '{fixture_name}'. (File format may be invalid.)",
                     RuntimeWarning,
                 )
 
@@ -293,23 +288,17 @@ class Command(BaseCommand):
         cmp_fmts = self.compression_formats if cmp_fmt is None else [cmp_fmt]
         ser_fmts = self.serialization_formats if ser_fmt is None else [ser_fmt]
         return {
-            "%s.%s"
-            % (
-                fixture_name,
-                ".".join([ext for ext in combo if ext]),
-            )
+            f'{fixture_name}.{".".join([ext for ext in combo if ext])}'
             for combo in product(databases, ser_fmts, cmp_fmts)
         }
 
     def find_fixture_files_in_dir(self, fixture_dir, fixture_name, targets):
-        fixture_files_in_dir = []
         path = os.path.join(fixture_dir, fixture_name)
-        for candidate in glob.iglob(glob.escape(path) + "*"):
-            if os.path.basename(candidate) in targets:
-                # Save the fixture_dir and fixture_name for future error
-                # messages.
-                fixture_files_in_dir.append((candidate, fixture_dir, fixture_name))
-        return fixture_files_in_dir
+        return [
+            (candidate, fixture_dir, fixture_name)
+            for candidate in glob.iglob(f"{glob.escape(path)}*")
+            if os.path.basename(candidate) in targets
+        ]
 
     @functools.cache
     def find_fixtures(self, fixture_label):
@@ -319,35 +308,32 @@ class Command(BaseCommand):
 
         fixture_name, ser_fmt, cmp_fmt = self.parse_name(fixture_label)
         if self.verbosity >= 2:
-            self.stdout.write("Loading '%s' fixtures..." % fixture_name)
+            self.stdout.write(f"Loading '{fixture_name}' fixtures...")
 
         fixture_name, fixture_dirs = self.get_fixture_name_and_dirs(fixture_name)
         targets = self.get_targets(fixture_name, ser_fmt, cmp_fmt)
         fixture_files = []
         for fixture_dir in fixture_dirs:
             if self.verbosity >= 2:
-                self.stdout.write("Checking %s for fixtures..." % humanize(fixture_dir))
+                self.stdout.write(f"Checking {humanize(fixture_dir)} for fixtures...")
             fixture_files_in_dir = self.find_fixture_files_in_dir(
                 fixture_dir,
                 fixture_name,
                 targets,
             )
             if self.verbosity >= 2 and not fixture_files_in_dir:
-                self.stdout.write(
-                    "No fixture '%s' in %s." % (fixture_name, humanize(fixture_dir))
-                )
+                self.stdout.write(f"No fixture '{fixture_name}' in {humanize(fixture_dir)}.")
 
             # Check kept for backwards-compatibility; it isn't clear why
             # duplicates are only allowed in different directories.
             if len(fixture_files_in_dir) > 1:
                 raise CommandError(
-                    "Multiple fixtures named '%s' in %s. Aborting."
-                    % (fixture_name, humanize(fixture_dir))
+                    f"Multiple fixtures named '{fixture_name}' in {humanize(fixture_dir)}. Aborting."
                 )
             fixture_files.extend(fixture_files_in_dir)
 
         if not fixture_files:
-            raise CommandError("No fixture named '%s' found." % fixture_name)
+            raise CommandError(f"No fixture named '{fixture_name}' found.")
 
         return fixture_files
 
@@ -360,18 +346,16 @@ class Command(BaseCommand):
         application, if it exists, the directories in FIXTURE_DIRS, and the
         current directory.
         """
-        dirs = []
         fixture_dirs = settings.FIXTURE_DIRS
         if len(fixture_dirs) != len(set(fixture_dirs)):
             raise ImproperlyConfigured("settings.FIXTURE_DIRS contains duplicates.")
+        dirs = []
         for app_config in apps.get_app_configs():
             app_label = app_config.label
             app_dir = os.path.join(app_config.path, "fixtures")
             if app_dir in [str(d) for d in fixture_dirs]:
                 raise ImproperlyConfigured(
-                    "'%s' is a default fixture directory for the '%s' app "
-                    "and cannot be listed in settings.FIXTURE_DIRS."
-                    % (app_dir, app_label)
+                    f"'{app_dir}' is a default fixture directory for the '{app_label}' app and cannot be listed in settings.FIXTURE_DIRS."
                 )
 
             if self.app_label and app_label != self.app_label:
@@ -402,14 +386,12 @@ class Command(BaseCommand):
             cmp_fmt = None
 
         if len(parts) > 1:
-            if parts[-1] in self.serialization_formats:
-                ser_fmt = parts[-1]
-                parts = parts[:-1]
-            else:
+            if parts[-1] not in self.serialization_formats:
                 raise CommandError(
-                    "Problem installing fixture '%s': %s is not a known "
-                    "serialization format." % (".".join(parts[:-1]), parts[-1])
+                    f"""Problem installing fixture '{".".join(parts[:-1])}': {parts[-1]} is not a known serialization format."""
                 )
+            ser_fmt = parts[-1]
+            parts = parts[:-1]
         else:
             ser_fmt = None
 
@@ -429,4 +411,4 @@ class SingleZipReader(zipfile.ZipFile):
 
 
 def humanize(dirname):
-    return "'%s'" % dirname if dirname else "absolute path"
+    return f"'{dirname}'" if dirname else "absolute path"

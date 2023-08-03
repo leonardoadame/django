@@ -15,11 +15,7 @@ class PostGISAdapter:
 
         # Getting the WKB (in string form, to allow easy pickling of
         # the adaptor) and the SRID from the geometry or raster.
-        if self.is_geometry:
-            self.ewkb = bytes(obj.ewkb)
-        else:
-            self.ewkb = to_pgraster(obj)
-
+        self.ewkb = bytes(obj.ewkb) if self.is_geometry else to_pgraster(obj)
         self.srid = obj.srid
         self.geography = geography
 

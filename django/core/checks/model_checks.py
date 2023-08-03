@@ -52,10 +52,11 @@ def check_all_models(app_configs=None, **kwargs):
             model_labels_str = ", ".join(model_labels)
             errors.append(
                 error_class(
-                    "db_table '%s' is used by multiple models: %s."
-                    % (db_table, model_labels_str),
+                    f"db_table '{db_table}' is used by multiple models: {model_labels_str}.",
                     obj=db_table,
-                    hint=(error_hint % model_labels_str) if error_hint else None,
+                    hint=(error_hint % model_labels_str)
+                    if error_hint
+                    else None,
                     id=error_id,
                 )
             )
@@ -64,28 +65,22 @@ def check_all_models(app_configs=None, **kwargs):
             model_labels = set(model_labels)
             errors.append(
                 Error(
-                    "index name '%s' is not unique %s %s."
-                    % (
-                        index_name,
-                        "for model" if len(model_labels) == 1 else "among models:",
-                        ", ".join(sorted(model_labels)),
-                    ),
-                    id="models.E029" if len(model_labels) == 1 else "models.E030",
-                ),
+                    f"""index name '{index_name}' is not unique {"for model" if len(model_labels) == 1 else "among models:"} {", ".join(sorted(model_labels))}.""",
+                    id="models.E029"
+                    if len(model_labels) == 1
+                    else "models.E030",
+                )
             )
     for constraint_name, model_labels in constraints.items():
         if len(model_labels) > 1:
             model_labels = set(model_labels)
             errors.append(
                 Error(
-                    "constraint name '%s' is not unique %s %s."
-                    % (
-                        constraint_name,
-                        "for model" if len(model_labels) == 1 else "among models:",
-                        ", ".join(sorted(model_labels)),
-                    ),
-                    id="models.E031" if len(model_labels) == 1 else "models.E032",
-                ),
+                    f"""constraint name '{constraint_name}' is not unique {"for model" if len(model_labels) == 1 else "among models:"} {", ".join(sorted(model_labels))}.""",
+                    id="models.E031"
+                    if len(model_labels) == 1
+                    else "models.E032",
+                )
             )
     return errors
 
@@ -137,7 +132,7 @@ def _check_lazy_references(apps, ignore=None):
             apps.get_app_config(model_key[0])
             model_error = "app '%s' doesn't provide model '%s'" % model_key
         except LookupError:
-            model_error = "app '%s' isn't installed" % model_key[0]
+            model_error = f"app '{model_key[0]}' isn't installed"
         return model_error
 
     # Here are several functions which return CheckMessage instances for the
@@ -167,14 +162,11 @@ def _check_lazy_references(apps, ignore=None):
         # The receiver is either a function or an instance of class
         # defining a `__call__` method.
         if isinstance(receiver, types.FunctionType):
-            description = "The function '%s'" % receiver.__name__
+            description = f"The function '{receiver.__name__}'"
         elif isinstance(receiver, types.MethodType):
-            description = "Bound method '%s.%s'" % (
-                receiver.__self__.__class__.__name__,
-                receiver.__name__,
-            )
+            description = f"Bound method '{receiver.__self__.__class__.__name__}.{receiver.__name__}'"
         else:
-            description = "An instance of class '%s'" % receiver.__class__.__name__
+            description = f"An instance of class '{receiver.__class__.__name__}'"
         signal_name = model_signals.get(func.__self__, "unknown")
         params = {
             "model": ".".join(model_key),

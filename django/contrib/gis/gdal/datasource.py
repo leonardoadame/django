@@ -54,10 +54,7 @@ class DataSource(GDALBase):
 
     def __init__(self, ds_input, ds_driver=False, write=False, encoding="utf-8"):
         # The write flag.
-        if write:
-            self._write = 1
-        else:
-            self._write = 0
+        self._write = 1 if write else 0
         # See also https://gdal.org/development/rfc/rfc23_ogr_unicode.html
         self.encoding = encoding
 
@@ -72,20 +69,20 @@ class DataSource(GDALBase):
             except GDALException:
                 # Making the error message more clear rather than something
                 # like "Invalid pointer returned from OGROpen".
-                raise GDALException('Could not open the datasource at "%s"' % ds_input)
+                raise GDALException(f'Could not open the datasource at "{ds_input}"')
         elif isinstance(ds_input, self.ptr_type) and isinstance(
             ds_driver, Driver.ptr_type
         ):
             ds = ds_input
         else:
-            raise GDALException("Invalid data source input type: %s" % type(ds_input))
+            raise GDALException(f"Invalid data source input type: {type(ds_input)}")
 
         if ds:
             self.ptr = ds
             self.driver = Driver(ds_driver)
         else:
             # Raise an exception if the returned pointer is NULL
-            raise GDALException('Invalid data source file "%s"' % ds_input)
+            raise GDALException(f'Invalid data source file "{ds_input}"')
 
     def __getitem__(self, index):
         "Allows use of the index [] operator to get a layer at the index."
@@ -93,17 +90,16 @@ class DataSource(GDALBase):
             try:
                 layer = capi.get_layer_by_name(self.ptr, force_bytes(index))
             except GDALException:
-                raise IndexError("Invalid OGR layer name given: %s." % index)
+                raise IndexError(f"Invalid OGR layer name given: {index}.")
         elif isinstance(index, int):
             if 0 <= index < self.layer_count:
                 layer = capi.get_layer(self._ptr, index)
             else:
                 raise IndexError(
-                    "Index out of range when accessing layers in a datasource: %s."
-                    % index
+                    f"Index out of range when accessing layers in a datasource: {index}."
                 )
         else:
-            raise TypeError("Invalid index type: %s" % type(index))
+            raise TypeError(f"Invalid index type: {type(index)}")
         return Layer(layer, self)
 
     def __len__(self):
@@ -112,7 +108,7 @@ class DataSource(GDALBase):
 
     def __str__(self):
         "Return OGR GetName and Driver for the Data Source."
-        return "%s (%s)" % (self.name, self.driver)
+        return f"{self.name} ({self.driver})"
 
     @property
     def layer_count(self):

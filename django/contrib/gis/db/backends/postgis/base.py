@@ -47,6 +47,9 @@ if is_psycopg3:
 
     @lru_cache
     def postgis_adapters(geo_oid, geog_oid, raster_oid):
+
+
+
         class BaseDumper(Dumper):
             def __init_subclass__(cls, base_dumper):
                 super().__init_subclass__()
@@ -68,16 +71,17 @@ if is_psycopg3:
                     return RasterType
 
             def upgrade(self, obj, format):
-                if obj.is_geometry:
-                    if obj.geography:
-                        return self.GeographyDumper(GeographyType)
-                    else:
-                        return self.GeometryDumper(GeometryType)
-                else:
+                if not obj.is_geometry:
                     return self.RasterDumper(RasterType)
+
+                if obj.geography:
+                    return self.GeographyDumper(GeographyType)
+                else:
+                    return self.GeometryDumper(GeometryType)
 
             def dump(self, obj):
                 raise NotImplementedError
+
 
         class PostGISTextDumper(BaseDumper, base_dumper=BaseTextDumper):
             pass

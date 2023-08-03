@@ -50,10 +50,7 @@ def check_csrf_failure_view(app_configs, **kwargs):
     try:
         view = _get_failure_view()
     except ImportError:
-        msg = (
-            "The CSRF failure view '%s' could not be imported."
-            % settings.CSRF_FAILURE_VIEW
-        )
+        msg = f"The CSRF failure view '{settings.CSRF_FAILURE_VIEW}' could not be imported."
         errors.append(Error(msg, id="security.E102"))
     else:
         try:

@@ -36,7 +36,7 @@ def default_key_func(key, key_prefix, version):
     the `key_prefix`. KEY_FUNCTION can be used to specify an alternate
     function with custom key making behavior.
     """
-    return "%s:%s:%s" % (key_prefix, version, key)
+    return f"{key_prefix}:{version}:{key}"
 
 
 def get_key_func(key_func):
@@ -46,10 +46,7 @@ def get_key_func(key_func):
     Default to ``default_key_func``.
     """
     if key_func is not None:
-        if callable(key_func):
-            return key_func
-        else:
-            return import_string(key_func)
+        return key_func if callable(key_func) else import_string(key_func)
     return default_key_func
 
 
@@ -265,7 +262,7 @@ class BaseCache:
         """
         value = self.get(key, self._missing_key, version=version)
         if value is self._missing_key:
-            raise ValueError("Key '%s' not found" % key)
+            raise ValueError(f"Key '{key}' not found")
         new_value = value + delta
         self.set(key, new_value, version=version)
         return new_value
@@ -274,7 +271,7 @@ class BaseCache:
         """See incr()."""
         value = await self.aget(key, self._missing_key, version=version)
         if value is self._missing_key:
-            raise ValueError("Key '%s' not found" % key)
+            raise ValueError(f"Key '{key}' not found")
         new_value = value + delta
         await self.aset(key, new_value, version=version)
         return new_value
@@ -351,7 +348,7 @@ class BaseCache:
 
         value = self.get(key, self._missing_key, version=version)
         if value is self._missing_key:
-            raise ValueError("Key '%s' not found" % key)
+            raise ValueError(f"Key '{key}' not found")
 
         self.set(key, value, version=version + delta)
         self.delete(key, version=version)
@@ -364,7 +361,7 @@ class BaseCache:
 
         value = await self.aget(key, self._missing_key, version=version)
         if value is self._missing_key:
-            raise ValueError("Key '%s' not found" % key)
+            raise ValueError(f"Key '{key}' not found")
 
         await self.aset(key, value, version=version + delta)
         await self.adelete(key, version=version)

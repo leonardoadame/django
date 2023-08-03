@@ -83,9 +83,7 @@ class UserAdmin(admin.ModelAdmin):
     )
 
     def get_fieldsets(self, request, obj=None):
-        if not obj:
-            return self.add_fieldsets
-        return super().get_fieldsets(request, obj)
+        return self.add_fieldsets if not obj else super().get_fieldsets(request, obj)
 
     def get_form(self, request, obj=None, **kwargs):
         """
@@ -94,7 +92,7 @@ class UserAdmin(admin.ModelAdmin):
         defaults = {}
         if obj is None:
             defaults["form"] = self.add_form
-        defaults.update(kwargs)
+        defaults |= kwargs
         return super().get_form(request, obj, **defaults)
 
     def get_urls(self):
@@ -172,12 +170,7 @@ class UserAdmin(admin.ModelAdmin):
                 update_session_auth_hash(request, form.user)
                 return HttpResponseRedirect(
                     reverse(
-                        "%s:%s_%s_change"
-                        % (
-                            self.admin_site.name,
-                            user._meta.app_label,
-                            user._meta.model_name,
-                        ),
+                        f"{self.admin_site.name}:{user._meta.app_label}_{user._meta.model_name}_change",
                         args=(user.pk,),
                     )
                 )

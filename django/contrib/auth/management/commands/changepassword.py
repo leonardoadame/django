@@ -15,10 +15,10 @@ class Command(BaseCommand):
     requires_system_checks = []
 
     def _get_pass(self, prompt="Password: "):
-        p = getpass.getpass(prompt=prompt)
-        if not p:
+        if p := getpass.getpass(prompt=prompt):
+            return p
+        else:
             raise CommandError("aborted")
-        return p
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -36,19 +36,15 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        if options["username"]:
-            username = options["username"]
-        else:
-            username = getpass.getuser()
-
+        username = options["username"] if options["username"] else getpass.getuser()
         try:
             u = UserModel._default_manager.using(options["database"]).get(
                 **{UserModel.USERNAME_FIELD: username}
             )
         except UserModel.DoesNotExist:
-            raise CommandError("user '%s' does not exist" % username)
+            raise CommandError(f"user '{username}' does not exist")
 
-        self.stdout.write("Changing password for user '%s'" % u)
+        self.stdout.write(f"Changing password for user '{u}'")
 
         MAX_TRIES = 3
         count = 0
@@ -72,10 +68,10 @@ class Command(BaseCommand):
 
         if count == MAX_TRIES:
             raise CommandError(
-                "Aborting password change for user '%s' after %s attempts" % (u, count)
+                f"Aborting password change for user '{u}' after {count} attempts"
             )
 
         u.set_password(p1)
         u.save()
 
-        return "Password changed successfully for user '%s'" % u
+        return f"Password changed successfully for user '{u}'"

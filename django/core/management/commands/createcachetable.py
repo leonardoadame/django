@@ -61,7 +61,7 @@ class Command(BaseCommand):
 
         if tablename in connection.introspection.table_names():
             if self.verbosity > 0:
-                self.stdout.write("Cache table '%s' already exists." % tablename)
+                self.stdout.write(f"Cache table '{tablename}' already exists.")
             return
 
         fields = (
@@ -79,7 +79,7 @@ class Command(BaseCommand):
             field_output = [
                 qn(f.name),
                 f.db_type(connection=connection),
-                "%sNULL" % ("NOT " if not f.null else ""),
+                f'{"NOT " if not f.null else ""}NULL',
             ]
             if f.primary_key:
                 field_output.append("PRIMARY KEY")
@@ -88,20 +88,14 @@ class Command(BaseCommand):
             if f.db_index:
                 unique = "UNIQUE " if f.unique else ""
                 index_output.append(
-                    "CREATE %sINDEX %s ON %s (%s);"
-                    % (
-                        unique,
-                        qn("%s_%s" % (tablename, f.name)),
-                        qn(tablename),
-                        qn(f.name),
-                    )
+                    f'CREATE {unique}INDEX {qn(f"{tablename}_{f.name}")} ON {qn(tablename)} ({qn(f.name)});'
                 )
             table_output.append(" ".join(field_output))
-        full_statement = ["CREATE TABLE %s (" % qn(tablename)]
-        for i, line in enumerate(table_output):
-            full_statement.append(
-                "    %s%s" % (line, "," if i < len(table_output) - 1 else "")
-            )
+        full_statement = [f"CREATE TABLE {qn(tablename)} ("]
+        full_statement.extend(
+            f'    {line}{"," if i < len(table_output) - 1 else ""}'
+            for i, line in enumerate(table_output)
+        )
         full_statement.append(");")
 
         full_statement = "\n".join(full_statement)
@@ -127,4 +121,4 @@ class Command(BaseCommand):
                     curs.execute(statement)
 
         if self.verbosity > 1:
-            self.stdout.write("Cache table '%s' created." % tablename)
+            self.stdout.write(f"Cache table '{tablename}' created.")

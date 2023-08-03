@@ -101,7 +101,7 @@ def make_password(password, salt=None, hasher="default"):
         )
     if not isinstance(password, (bytes, str)):
         raise TypeError(
-            "Password must be a string or bytes, got %s." % type(password).__qualname__
+            f"Password must be a string or bytes, got {type(password).__qualname__}."
         )
     hasher = get_hasher(hasher)
     salt = salt or hasher.salt()
@@ -116,7 +116,7 @@ def get_hashers():
         hasher = hasher_cls()
         if not getattr(hasher, "algorithm"):
             raise ImproperlyConfigured(
-                "hasher doesn't specify an algorithm name: %s" % hasher_path
+                f"hasher doesn't specify an algorithm name: {hasher_path}"
             )
         hashers.append(hasher)
     return hashers
@@ -405,7 +405,7 @@ class Argon2PasswordHasher(BasePasswordHasher):
         argon2 = self._load_library()
         algorithm, rest = encoded.split("$", 1)
         assert algorithm == self.algorithm
-        params = argon2.extract_parameters("$" + rest)
+        params = argon2.extract_parameters(f"${rest}")
         variety, *_, b64salt, hash = rest.split("$")
         # Add padding.
         b64salt += "=" * (-len(b64salt) % 4)
@@ -427,7 +427,7 @@ class Argon2PasswordHasher(BasePasswordHasher):
         algorithm, rest = encoded.split("$", 1)
         assert algorithm == self.algorithm
         try:
-            return argon2.PasswordHasher().verify("$" + rest, password)
+            return argon2.PasswordHasher().verify(f"${rest}", password)
         except argon2.exceptions.VerificationError:
             return False
 
@@ -502,7 +502,7 @@ class BCryptSHA256PasswordHasher(BasePasswordHasher):
             password = binascii.hexlify(self.digest(password).digest())
 
         data = bcrypt.hashpw(password, salt)
-        return "%s$%s" % (self.algorithm, data.decode("ascii"))
+        return f'{self.algorithm}${data.decode("ascii")}'
 
     def decode(self, encoded):
         algorithm, empty, algostr, work_factor, data = encoded.split("$", 4)
@@ -660,7 +660,7 @@ class SHA1PasswordHasher(BasePasswordHasher):
     def encode(self, password, salt):
         self._check_encode_args(password, salt)
         hash = hashlib.sha1((salt + password).encode()).hexdigest()
-        return "%s$%s$%s" % (self.algorithm, salt, hash)
+        return f"{self.algorithm}${salt}${hash}"
 
     def decode(self, encoded):
         algorithm, salt, hash = encoded.split("$", 2)
@@ -702,7 +702,7 @@ class MD5PasswordHasher(BasePasswordHasher):
     def encode(self, password, salt):
         self._check_encode_args(password, salt)
         hash = hashlib.md5((salt + password).encode()).hexdigest()
-        return "%s$%s$%s" % (self.algorithm, salt, hash)
+        return f"{self.algorithm}${salt}${hash}"
 
     def decode(self, encoded):
         algorithm, salt, hash = encoded.split("$", 2)
@@ -762,7 +762,7 @@ class UnsaltedSHA1PasswordHasher(BasePasswordHasher):
         if salt != "":
             raise ValueError("salt must be empty.")
         hash = hashlib.sha1(password.encode()).hexdigest()
-        return "sha1$$%s" % hash
+        return f"sha1$${hash}"
 
     def decode(self, encoded):
         assert encoded.startswith("sha1$$")

@@ -50,7 +50,7 @@ elif os.name == "posix":
         "gdal2.2.0",
     ]
 else:
-    raise ImproperlyConfigured('GDAL is unsupported on OS "%s".' % os.name)
+    raise ImproperlyConfigured(f'GDAL is unsupported on OS "{os.name}".')
 
 # Using the ctypes `find_library` utility  to find the
 # path to the GDAL library from the list of library names.
@@ -85,10 +85,7 @@ def std_call(func):
     Return the correct STDCALL function for certain OSR routines on Win32
     platforms.
     """
-    if os.name == "nt":
-        return lwingdal[func]
-    else:
-        return lgdal[func]
+    return lwingdal[func] if os.name == "nt" else lgdal[func]
 
 
 # #### Version-information functions. ####
@@ -113,7 +110,7 @@ def gdal_version_info():
     ver = gdal_version()
     m = re.match(rb"^(?P<major>\d+)\.(?P<minor>\d+)(?:\.(?P<subminor>\d+))?", ver)
     if not m:
-        raise GDALException('Could not parse GDAL version string "%s"' % ver)
+        raise GDALException(f'Could not parse GDAL version string "{ver}"')
     major, minor, subminor = m.groups()
     return (int(major), int(minor), subminor and int(subminor))
 
