@@ -37,7 +37,7 @@ def load_geos():
         # *NIX libraries
         lib_names = ["geos_c", "GEOS"]
     else:
-        raise ImportError('Unsupported OS "%s"' % os.name)
+        raise ImportError(f'Unsupported OS "{os.name}"')
 
     # Using the ctypes `find_library` utility to find the path to the GEOS
     # shared library.  This is better than manually specifying each library name
@@ -51,8 +51,7 @@ def load_geos():
     # No GEOS library could be found.
     if lib_path is None:
         raise ImportError(
-            'Could not find the GEOS library (tried "%s"). '
-            "Try setting GEOS_LIBRARY_PATH in your settings." % '", "'.join(lib_names)
+            f"""Could not find the GEOS library (tried "{'", "'.join(lib_names)}"). Try setting GEOS_LIBRARY_PATH in your settings."""
         )
     # Getting the GEOS C library.  The C interface (CDLL) is used for
     # both *NIX and Windows.
@@ -64,9 +63,9 @@ def load_geos():
     # attached to a GEOS context handle -- this actually occurs in
     # geos/prototypes/threadsafe.py.
     _lgeos.initGEOS_r.restype = CONTEXT_PTR
-    _lgeos.finishGEOS_r.argtypes = [CONTEXT_PTR]
     # Set restype for compatibility across 32 and 64-bit platforms.
     _lgeos.GEOSversion.restype = c_char_p
+    _lgeos.finishGEOS_r.argtypes = [CONTEXT_PTR]
     return _lgeos
 
 

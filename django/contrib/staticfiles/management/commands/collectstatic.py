@@ -116,12 +116,8 @@ class Command(BaseCommand):
         if self.clear:
             self.clear_dir("")
 
-        if self.symlink:
-            handler = self.link_file
-        else:
-            handler = self.copy_file
-
         found_files = {}
+        handler = self.link_file if self.symlink else self.copy_file
         for finder in get_finders():
             for path, storage in finder.list(self.ignore_patterns):
                 # Prefix the relative path if the source storage contains it
@@ -135,10 +131,7 @@ class Command(BaseCommand):
                     handler(path, prefixed_path, storage)
                 else:
                     self.log(
-                        "Found another file with the destination path '%s'. It "
-                        "will be ignored since only the first encountered file "
-                        "is collected. If this is not what you want, make sure "
-                        "every static file has a unique path." % prefixed_path,
+                        f"Found another file with the destination path '{prefixed_path}'. It will be ignored since only the first encountered file is collected. If this is not what you want, make sure every static file has a unique path.",
                         level=1,
                     )
 
@@ -147,19 +140,16 @@ class Command(BaseCommand):
             processor = self.storage.post_process(found_files, dry_run=self.dry_run)
             for original_path, processed_path, processed in processor:
                 if isinstance(processed, Exception):
-                    self.stderr.write("Post-processing '%s' failed!" % original_path)
+                    self.stderr.write(f"Post-processing '{original_path}' failed!")
                     # Add a blank line before the traceback, otherwise it's
                     # too easy to miss the relevant part of the error message.
                     self.stderr.write()
                     raise processed
                 if processed:
-                    self.log(
-                        "Post-processed '%s' as '%s'" % (original_path, processed_path),
-                        level=2,
-                    )
+                    self.log(f"Post-processed '{original_path}' as '{processed_path}'", level=2)
                     self.post_processed_files.append(original_path)
                 else:
-                    self.log("Skipped post-processing '%s'" % original_path)
+                    self.log(f"Skipped post-processing '{original_path}'")
 
         return {
             "modified": self.copied_files + self.symlinked_files,
@@ -215,24 +205,22 @@ class Command(BaseCommand):
             return (
                 "\n%(modified_count)s %(identifier)s %(action)s"
                 "%(destination)s%(unmodified)s%(post_processed)s."
-            ) % {
-                "modified_count": modified_count,
-                "identifier": "static file" + ("" if modified_count == 1 else "s"),
-                "action": "symlinked" if self.symlink else "copied",
-                "destination": (
-                    " to '%s'" % destination_path if destination_path else ""
-                ),
-                "unmodified": (
-                    ", %s unmodified" % unmodified_count
+                % {
+                    "modified_count": modified_count,
+                    "identifier": "static file"
+                    + ("" if modified_count == 1 else "s"),
+                    "action": "symlinked" if self.symlink else "copied",
+                    "destination": f" to '{destination_path}'"
+                    if destination_path
+                    else "",
+                    "unmodified": f", {unmodified_count} unmodified"
                     if collected["unmodified"]
-                    else ""
-                ),
-                "post_processed": (
-                    collected["post_processed"]
-                    and ", %s post-processed" % post_processed_count
-                    or ""
-                ),
-            }
+                    else "",
+                    "post_processed": collected["post_processed"]
+                    and f", {post_processed_count} post-processed"
+                    or "",
+                }
+            )
 
     def log(self, msg, level=2):
         """
@@ -255,9 +243,9 @@ class Command(BaseCommand):
         for f in files:
             fpath = os.path.join(path, f)
             if self.dry_run:
-                self.log("Pretending to delete '%s'" % fpath, level=1)
+                self.log(f"Pretending to delete '{fpath}'", level=1)
             else:
-                self.log("Deleting '%s'" % fpath, level=1)
+                self.log(f"Deleting '{fpath}'", level=1)
                 try:
                     full_path = self.storage.path(fpath)
                 except NotImplementedError:
@@ -312,13 +300,13 @@ class Command(BaseCommand):
                     if file_is_unmodified and can_skip_unmodified_files:
                         if prefixed_path not in self.unmodified_files:
                             self.unmodified_files.append(prefixed_path)
-                        self.log("Skipping '%s' (not modified)" % path)
+                        self.log(f"Skipping '{path}' (not modified)")
                         return False
             # Then delete the existing file if really needed
             if self.dry_run:
-                self.log("Pretending to delete '%s'" % path)
+                self.log(f"Pretending to delete '{path}'")
             else:
-                self.log("Deleting '%s'" % path)
+                self.log(f"Deleting '{path}'")
                 self.storage.delete(prefixed_path)
         return True
 
@@ -328,7 +316,7 @@ class Command(BaseCommand):
         """
         # Skip this file if it was already copied earlier
         if prefixed_path in self.symlinked_files:
-            return self.log("Skipping '%s' (already linked earlier)" % path)
+            return self.log(f"Skipping '{path}' (already linked earlier)")
         # Delete the target file if needed or break
         if not self.delete_file(path, prefixed_path, source_storage):
             return
@@ -336,9 +324,9 @@ class Command(BaseCommand):
         source_path = source_storage.path(path)
         # Finally link the file
         if self.dry_run:
-            self.log("Pretending to link '%s'" % source_path, level=1)
+            self.log(f"Pretending to link '{source_path}'", level=1)
         else:
-            self.log("Linking '%s'" % source_path, level=2)
+            self.log(f"Linking '{source_path}'", level=2)
             full_path = self.storage.path(prefixed_path)
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             try:
@@ -363,7 +351,7 @@ class Command(BaseCommand):
         """
         # Skip this file if it was already copied earlier
         if prefixed_path in self.copied_files:
-            return self.log("Skipping '%s' (already copied earlier)" % path)
+            return self.log(f"Skipping '{path}' (already copied earlier)")
         # Delete the target file if needed or break
         if not self.delete_file(path, prefixed_path, source_storage):
             return
@@ -371,9 +359,9 @@ class Command(BaseCommand):
         source_path = source_storage.path(path)
         # Finally start copying
         if self.dry_run:
-            self.log("Pretending to copy '%s'" % source_path, level=1)
+            self.log(f"Pretending to copy '{source_path}'", level=1)
         else:
-            self.log("Copying '%s'" % source_path, level=2)
+            self.log(f"Copying '{source_path}'", level=2)
             with source_storage.open(path) as source_file:
                 self.storage.save(prefixed_path, source_file)
         self.copied_files.append(prefixed_path)

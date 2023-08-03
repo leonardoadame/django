@@ -31,17 +31,16 @@ class Command(LabelCommand):
             if not isinstance(result, (list, tuple)):
                 result = [result]
             result = (os.path.realpath(path) for path in result)
-            if verbosity >= 1:
-                file_list = "\n  ".join(result)
-                return "Found '%s' here:\n  %s%s" % (
-                    path,
-                    file_list,
-                    searched_locations,
-                )
-            else:
+            if verbosity < 1:
                 return "\n".join(result)
+            file_list = "\n  ".join(result)
+            return "Found '%s' here:\n  %s%s" % (
+                path,
+                file_list,
+                searched_locations,
+            )
         else:
-            message = ["No matching file found for '%s'." % path]
+            message = [f"No matching file found for '{path}'."]
             if verbosity >= 2:
                 message.append(searched_locations)
             if verbosity >= 1:

@@ -67,7 +67,7 @@ class LocMemCache(BaseCache):
         with self._lock:
             if self._has_expired(key):
                 self._delete(key)
-                raise ValueError("Key '%s' not found" % key)
+                raise ValueError(f"Key '{key}' not found")
             pickled = self._cache[key]
             value = pickle.loads(pickled)
             new_value = value + delta
@@ -94,7 +94,7 @@ class LocMemCache(BaseCache):
             self._expire_info.clear()
         else:
             count = len(self._cache) // self._cull_frequency
-            for i in range(count):
+            for _ in range(count):
                 key, _ = self._cache.popitem()
                 del self._expire_info[key]
 

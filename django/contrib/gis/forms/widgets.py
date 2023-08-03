@@ -83,9 +83,11 @@ class BaseGeometryWidget(Widget):
                 self.attrs,
                 {
                     "name": name,
-                    "module": "geodjango_%s" % name.replace("-", "_"),  # JS-safe
+                    "module": f'geodjango_{name.replace("-", "_")}',
                     "serialized": self.serialize(value),
-                    "geom_type": "Geometry" if geom_type == "Unknown" else geom_type,
+                    "geom_type": "Geometry"
+                    if geom_type == "Unknown"
+                    else geom_type,
                     "STATIC_URL": settings.STATIC_URL,
                     "LANGUAGE_BIDI": translation.get_language_bidi(),
                     **(attrs or {}),

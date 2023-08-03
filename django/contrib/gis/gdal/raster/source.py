@@ -89,16 +89,12 @@ class GDALRaster(GDALRasterBase):
             if not ds_input.startswith(VSI_FILESYSTEM_PREFIX) and not os.path.exists(
                 ds_input
             ):
-                raise GDALException(
-                    'Unable to read raster source input "%s".' % ds_input
-                )
+                raise GDALException(f'Unable to read raster source input "{ds_input}".')
             try:
                 # GDALOpen will auto-detect the data source type.
                 self._ptr = capi.open_ds(force_bytes(ds_input), self._write)
             except GDALException as err:
-                raise GDALException(
-                    'Could not open the datasource at "{}" ({}).'.format(ds_input, err)
-                )
+                raise GDALException(f'Could not open the datasource at "{ds_input}" ({err}).')
         elif isinstance(ds_input, bytes):
             # Create a new raster in write mode.
             self._write = 1
@@ -134,9 +130,7 @@ class GDALRaster(GDALRasterBase):
             # For out of memory drivers, check filename argument
             if driver.name != "MEM" and "name" not in ds_input:
                 raise GDALException(
-                    'Specify name for creation of raster with driver "{}".'.format(
-                        driver.name
-                    )
+                    f'Specify name for creation of raster with driver "{driver.name}".'
                 )
 
             # Check if width and height where specified
@@ -152,7 +146,7 @@ class GDALRaster(GDALRasterBase):
             # Create null terminated gdal options array.
             papsz_options = []
             for key, val in ds_input.get("papsz_options", {}).items():
-                option = "{}={}".format(key, val)
+                option = f"{key}={val}"
                 papsz_options.append(option.upper().encode())
             papsz_options.append(None)
 
@@ -207,9 +201,7 @@ class GDALRaster(GDALRasterBase):
             # Instantiate the object using an existing pointer to a gdal raster.
             self._ptr = ds_input
         else:
-            raise GDALException(
-                'Invalid data source input type: "{}".'.format(type(ds_input))
-            )
+            raise GDALException(f'Invalid data source input type: "{type(ds_input)}".')
 
     def __del__(self):
         if self.is_vsi_based:
@@ -224,7 +216,7 @@ class GDALRaster(GDALRasterBase):
         """
         Short-hand representation because WKB may be very large.
         """
-        return "<Raster object at %s>" % hex(addressof(self._ptr))
+        return f"<Raster object at {hex(addressof(self._ptr))}>"
 
     def _flush(self):
         """
@@ -298,9 +290,7 @@ class GDALRaster(GDALRasterBase):
         """
         try:
             wkt = capi.get_ds_projection_ref(self._ptr)
-            if not wkt:
-                return None
-            return SpatialReference(wkt, srs_type="wkt")
+            return None if not wkt else SpatialReference(wkt, srs_type="wkt")
         except SRSException:
             return None
 
@@ -425,7 +415,7 @@ class GDALRaster(GDALRasterBase):
         ds_input.setdefault("driver", self.driver.name)
 
         if "name" not in ds_input:
-            ds_input["name"] = self.name + "_copy." + self.driver.name
+            ds_input["name"] = f"{self.name}_copy.{self.driver.name}"
 
         if "datatype" not in ds_input:
             ds_input["datatype"] = self.bands[0].datatype()
@@ -463,7 +453,7 @@ class GDALRaster(GDALRasterBase):
         if name:
             clone_name = name
         elif self.driver.name != "MEM":
-            clone_name = self.name + "_copy." + self.driver.name
+            clone_name = f"{self.name}_copy.{self.driver.name}"
         else:
             clone_name = os.path.join(VSI_MEM_FILESYSTEM_BASE_PATH, str(uuid.uuid4()))
         return GDALRaster(

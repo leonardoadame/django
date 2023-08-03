@@ -69,9 +69,7 @@ class Command(BaseCommand):
                 # no invalid tags
                 pass
             else:
-                raise CommandError(
-                    'There is no system check with the "%s" tag.' % invalid_tag
-                )
+                raise CommandError(f'There is no system check with the "{invalid_tag}" tag.')
 
         self.check(
             app_configs=app_configs,

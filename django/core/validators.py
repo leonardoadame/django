@@ -128,21 +128,19 @@ class URLValidator(RegexValidator):
         try:
             super().__call__(value)
         except ValidationError as e:
-            # Trivial case failed. Try for possible IDN domain
-            if value:
-                scheme, netloc, path, query, fragment = splitted_url
-                try:
-                    netloc = punycode(netloc)  # IDN -> ACE
-                except UnicodeError:  # invalid domain part
-                    raise e
-                url = urlunsplit((scheme, netloc, path, query, fragment))
-                super().__call__(url)
-            else:
+            if not value:
                 raise
+            scheme, netloc, path, query, fragment = splitted_url
+            try:
+                netloc = punycode(netloc)  # IDN -> ACE
+            except UnicodeError:  # invalid domain part
+                raise e
+            url = urlunsplit((scheme, netloc, path, query, fragment))
+            super().__call__(url)
         else:
-            # Now verify IPv6 in the netloc part
-            host_match = re.search(r"^\[(.+)\](?::[0-9]{1,5})?$", splitted_url.netloc)
-            if host_match:
+            if host_match := re.search(
+                r"^\[(.+)\](?::[0-9]{1,5})?$", splitted_url.netloc
+            ):
                 potential_ip = host_match[1]
                 try:
                     validate_ipv6_address(potential_ip)
@@ -228,8 +226,7 @@ class EmailValidator:
         if self.domain_regex.match(domain_part):
             return True
 
-        literal_match = self.literal_regex.match(domain_part)
-        if literal_match:
+        if literal_match := self.literal_regex.match(domain_part):
             ip_address = literal_match[1]
             try:
                 validate_ipv46_address(ip_address)
@@ -318,8 +315,7 @@ def ip_address_validators(protocol, unpack_ipv4):
         return ip_address_validator_map[protocol.lower()]
     except KeyError:
         raise ValueError(
-            "The protocol '%s' is unknown. Supported: %s"
-            % (protocol, list(ip_address_validator_map))
+            f"The protocol '{protocol}' is unknown. Supported: {list(ip_address_validator_map)}"
         )
 
 
@@ -481,17 +477,11 @@ class DecimalValidator:
                 # A positive exponent adds that many trailing zeros.
                 digits += exponent
             decimals = 0
+        elif abs(exponent) > len(digit_tuple):
+            digits = decimals = abs(exponent)
         else:
-            # If the absolute value of the negative exponent is larger than the
-            # number of digits, then it's the same as the number of digits,
-            # because it'll consume all of the digits in digit_tuple and then
-            # add abs(exponent) - len(digit_tuple) leading zeros after the
-            # decimal point.
-            if abs(exponent) > len(digit_tuple):
-                digits = decimals = abs(exponent)
-            else:
-                digits = len(digit_tuple)
-                decimals = abs(exponent)
+            digits = len(digit_tuple)
+            decimals = abs(exponent)
         whole_digits = digits - decimals
 
         if self.max_digits is not None and digits > self.max_digits:

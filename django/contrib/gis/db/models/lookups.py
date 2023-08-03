@@ -30,7 +30,7 @@ class GISLookup(Lookup):
             if len(self.rhs_params) == (2 if self.lookup_name == "relate" else 1):
                 self.process_band_indices()
             elif len(self.rhs_params) > 1:
-                raise ValueError("Tuple too long for lookup %s." % self.lookup_name)
+                raise ValueError(f"Tuple too long for lookup {self.lookup_name}.")
         elif isinstance(self.lhs, RasterBandTransform):
             self.process_band_indices(only_lhs=True)
 
@@ -282,7 +282,7 @@ class RelateLookup(GISLookup):
         if hasattr(backend_op, "check_relate_argument"):
             backend_op.check_relate_argument(pattern)
         elif not isinstance(pattern, str) or not self.pattern_regex.match(pattern):
-            raise ValueError('Invalid intersection matrix pattern "%s".' % pattern)
+            raise ValueError(f'Invalid intersection matrix pattern "{pattern}".')
         sql, params = super().process_rhs(compiler, connection)
         return sql, params + [pattern]
 
@@ -304,7 +304,7 @@ class DistanceLookupBase(GISLookup):
     def process_rhs_params(self):
         if not 1 <= len(self.rhs_params) <= 3:
             raise ValueError(
-                "2, 3, or 4-element tuple required for '%s' lookup." % self.lookup_name
+                f"2, 3, or 4-element tuple required for '{self.lookup_name}' lookup."
             )
         elif len(self.rhs_params) == 3 and self.rhs_params[2] != "spheroid":
             raise ValueError(

@@ -73,8 +73,7 @@ class Command(BaseCommand):
                 "# Feel free to rename the models, but don't rename db_table values or "
                 "field names."
             )
-            yield "from %s import models" % self.db_module
-            known_models = []
+            yield f"from {self.db_module} import models"
             # Determine types of tables and/or views to be introspected.
             types = {"t"}
             if options["include_partitions"]:
@@ -84,7 +83,8 @@ class Command(BaseCommand):
             table_info = connection.introspection.get_table_list(cursor)
             table_info = {info.name: info for info in table_info if info.type in types}
 
-            for table_name in options["table"] or sorted(name for name in table_info):
+            known_models = []
+            for table_name in options["table"] or sorted(iter(table_info)):
                 if table_name_filter is not None and callable(table_name_filter):
                     if not table_name_filter(table_name):
                         continue
@@ -118,14 +118,14 @@ class Command(BaseCommand):
                         cursor, table_name
                     )
                 except Exception as e:
-                    yield "# Unable to inspect table '%s'" % table_name
-                    yield "# The error was: %s" % e
+                    yield f"# Unable to inspect table '{table_name}'"
+                    yield f"# The error was: {e}"
                     continue
 
                 model_name = self.normalize_table_name(table_name)
                 yield ""
                 yield ""
-                yield "class %s(models.Model):" % model_name
+                yield f"class {model_name}(models.Model):"
                 known_models.append(model_name)
                 used_column_names = []  # Holds column names used in the table so far
                 column_to_field_name = {}  # Maps column names to names of model fields
@@ -141,7 +141,7 @@ class Command(BaseCommand):
                     att_name, params, notes = self.normalize_col_name(
                         column_name, used_column_names, is_relation
                     )
-                    extra_params.update(params)
+                    extra_params |= params
                     comment_notes.extend(notes)
 
                     used_column_names.append(att_name)
@@ -152,9 +152,7 @@ class Command(BaseCommand):
                         extra_params["primary_key"] = True
                         if len(primary_key_columns) > 1:
                             comment_notes.append(
-                                "The composite primary key (%s) found, that is not "
-                                "supported. The first column is selected."
-                                % ", ".join(primary_key_columns)
+                                f'The composite primary key ({", ".join(primary_key_columns)}) found, that is not supported. The first column is selected.'
                             )
                     elif column_name in unique_columns:
                         extra_params["unique"] = True
@@ -180,14 +178,11 @@ class Command(BaseCommand):
                             else self.normalize_table_name(ref_db_table)
                         )
                         if rel_to in known_models:
-                            field_type = "%s(%s" % (rel_type, rel_to)
+                            field_type = f"{rel_type}({rel_to}"
                         else:
-                            field_type = "%s('%s'" % (rel_type, rel_to)
+                            field_type = f"{rel_type}('{rel_to}'"
                         if rel_to in used_relations:
-                            extra_params["related_name"] = "%s_%s_set" % (
-                                model_name.lower(),
-                                att_name,
-                            )
+                            extra_params["related_name"] = f"{model_name.lower()}_{att_name}_set"
                         used_relations.add(rel_to)
                     else:
                         # Calling `get_field_type` to get the field type string and any
@@ -218,12 +213,7 @@ class Command(BaseCommand):
                         extra_params["blank"] = True
                         extra_params["null"] = True
 
-                    field_desc = "%s = %s%s" % (
-                        att_name,
-                        # Custom fields will have a dotted path
-                        "" if "." in field_type else "models.",
-                        field_type,
-                    )
+                    field_desc = f'{att_name} = {"" if "." in field_type else "models."}{field_type}'
                     if field_type.startswith(("ForeignKey(", "OneToOneField(")):
                         field_desc += ", models.DO_NOTHING"
 
@@ -240,7 +230,7 @@ class Command(BaseCommand):
                     field_desc += ")"
                     if comment_notes:
                         field_desc += "  # " + " ".join(comment_notes)
-                    yield "    %s" % field_desc
+                    yield f"    {field_desc}"
                 comment = None
                 if info := table_info.get(table_name):
                     is_view = info.type == "v"
@@ -290,11 +280,11 @@ class Command(BaseCommand):
                 )
 
         if new_name.startswith("_"):
-            new_name = "field%s" % new_name
+            new_name = f"field{new_name}"
             field_notes.append("Field renamed because it started with '_'.")
 
         if new_name.endswith("_"):
-            new_name = "%sfield" % new_name
+            new_name = f"{new_name}field"
             field_notes.append("Field renamed because it ended with '_'.")
 
         if keyword.iskeyword(new_name):
@@ -302,7 +292,7 @@ class Command(BaseCommand):
             field_notes.append("Field renamed because it was a Python reserved word.")
 
         if new_name[0].isdigit():
-            new_name = "number_%s" % new_name
+            new_name = f"number_{new_name}"
             field_notes.append(
                 "Field renamed because it wasn't a valid Python identifier."
             )
@@ -403,12 +393,12 @@ class Command(BaseCommand):
             meta.append("    # A unique constraint could not be introspected.")
         meta += [
             "    class Meta:",
-            "        managed = False%s" % managed_comment,
+            f"        managed = False{managed_comment}",
             "        db_table = %r" % table_name,
         ]
         if unique_together:
             tup = "(" + ", ".join(unique_together) + ",)"
-            meta += ["        unique_together = %s" % tup]
+            meta += [f"        unique_together = {tup}"]
         if comment:
             meta += [f"        db_table_comment = {comment!r}"]
         return meta

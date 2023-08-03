@@ -27,17 +27,15 @@ class OracleIntrospection(DatabaseIntrospection):
                 row = cursor.fetchone()
             except Exception as exc:
                 raise Exception(
-                    "Could not find entry in USER_SDO_GEOM_METADATA "
-                    'corresponding to "%s"."%s"' % (table_name, description.name)
+                    f'Could not find entry in USER_SDO_GEOM_METADATA corresponding to "{table_name}"."{description.name}"'
                 ) from exc
 
             # TODO: Research way to find a more specific geometry field type for
             # the column's contents.
             field_type = "GeometryField"
 
-            # Getting the field parameters.
-            field_params = {}
             dim, srid = row
+            field_params = {}
             if srid != 4326:
                 field_params["srid"] = srid
             # Size of object array (SDO_DIM_ARRAY) is number of dimensions.
