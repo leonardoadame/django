@@ -10,10 +10,10 @@
   },
   "devDependencies": {
     "eslint": "^8.36.0",
-    "puppeteer": "^19.8.2",
+    "puppeteer": "^22.11.2",
     "grunt": "^1.6.1",
     "grunt-cli": "^1.4.3",
-    "grunt-contrib-qunit": "^7.0.0",
+    "grunt-contrib-qunit": "^9.0.0",
     "qunit": "^2.19.4"
   }
 }
